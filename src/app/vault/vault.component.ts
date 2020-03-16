@@ -32,6 +32,7 @@ import { GroupingsComponent } from './groupings.component';
 import { PasswordGeneratorComponent } from './password-generator.component';
 import { PasswordHistoryComponent } from './password-history.component';
 import { ShareComponent } from './share.component';
+import { ViewComponent } from './view.component';
 
 import { CipherType } from 'jslib/enums/cipherType';
 import { EventType } from 'jslib/enums/eventType';
@@ -53,6 +54,7 @@ const BroadcasterSubscriptionId = 'VaultComponent';
     templateUrl: 'vault.component.html',
 })
 export class VaultComponent implements OnInit, OnDestroy {
+    @ViewChild(ViewComponent) viewComponent: ViewComponent;
     @ViewChild(AddEditComponent) addEditComponent: AddEditComponent;
     @ViewChild(CiphersComponent) ciphersComponent: CiphersComponent;
     @ViewChild(GroupingsComponent) groupingsComponent: GroupingsComponent;
@@ -151,6 +153,22 @@ export class VaultComponent implements OnInit, OnDestroy {
                     case 'modalClosed':
                         this.showingModal = false;
                         break;
+                    case 'copyUsername':
+                        const uComponent = this.addEditComponent == null ? this.viewComponent : this.addEditComponent;
+                        const uCipher = uComponent != null ? uComponent.cipher : null;
+                        if (this.cipherId != null && uCipher != null && uCipher.id === this.cipherId &&
+                            uCipher.login != null && uCipher.login.username != null) {
+                            this.copyValue(uCipher.login.username, 'username');
+                        }
+                        break;
+                    case 'copyPassword':
+                        const pComponent = this.addEditComponent == null ? this.viewComponent : this.addEditComponent;
+                        const pCipher = pComponent != null ? pComponent.cipher : null;
+                        if (this.cipherId != null && pCipher != null && pCipher.id === this.cipherId &&
+                            pCipher.login != null && pCipher.login.password != null) {
+                            this.copyValue(pCipher.login.password, 'password');
+                        }
+                        break;
                     default:
                         detectChanges = false;
                         break;
@@ -189,7 +207,9 @@ export class VaultComponent implements OnInit, OnDestroy {
                 if (params.cipherId) {
                     const cipherView = new CipherView();
                     cipherView.id = params.cipherId;
-                    if (params.action === 'edit') {
+                    if (params.action === 'clone') {
+                        await this.cloneCipher(cipherView);
+                    } else if (params.action === 'edit') {
                         await this.editCipher(cipherView);
                     } else {
                         await this.viewCipher(cipherView);
@@ -247,6 +267,12 @@ export class VaultComponent implements OnInit, OnDestroy {
             label: this.i18nService.t('edit'),
             click: () => this.functionWithChangeDetection(() => {
                 this.editCipher(cipher);
+            }),
+        }));
+        menu.append(new remote.MenuItem({
+            label: this.i18nService.t('clone'),
+            click: () => this.functionWithChangeDetection(() => {
+                this.cloneCipher(cipher);
             }),
         }));
 
@@ -312,6 +338,18 @@ export class VaultComponent implements OnInit, OnDestroy {
 
         this.cipherId = cipher.id;
         this.action = 'edit';
+        this.go();
+    }
+
+    async cloneCipher(cipher: CipherView) {
+        if (this.action === 'clone' && this.cipherId === cipher.id) {
+            return;
+        } else if (this.dirtyInput() && await this.wantsToSaveChanges()) {
+            return;
+        }
+
+        this.cipherId = cipher.id;
+        this.action = 'clone';
         this.go();
     }
 
@@ -573,7 +611,7 @@ export class VaultComponent implements OnInit, OnDestroy {
     }
 
     private dirtyInput(): boolean {
-        return (this.action === 'add' || this.action === 'edit') &&
+        return (this.action === 'add' || this.action === 'edit' || this.action === 'clone') &&
             document.querySelectorAll('app-vault-add-edit .ng-dirty').length > 0;
     }
 
