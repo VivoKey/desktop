@@ -5,7 +5,7 @@ import {
     ViewContainerRef,
 } from '@angular/core';
 import { Router } from '@angular/router';
-
+import { BrowserWindow } from 'electron';
 import { EnvironmentComponent } from './environment.component';
 
 import { AuthService } from 'jslib/abstractions/auth.service';
@@ -26,6 +26,8 @@ export class LoginComponent extends BaseLoginComponent {
     @ViewChild('environment', { read: ViewContainerRef }) environmentModal: ViewContainerRef;
 
     showingModal = false;
+    isretyet: boolean = false;
+    returl: string;
 
     constructor(authService: AuthService, router: Router,
         i18nService: I18nService, syncService: SyncService,
@@ -36,7 +38,33 @@ export class LoginComponent extends BaseLoginComponent {
             return syncService.fullSync(true);
         };
     }
-
+    async submit() {
+        let win = new BrowserWindow({ width: 800, height: 600, frame: false })
+        win.loadURL("https://vault.vivokey.com/bwauth/webapi/redirectin?state=login&app_type=mobile");
+        win.once('ready-to-show', () => {
+            win.show()
+        })
+        let con = win.webContents;
+        let observ = {
+            next: (x: string) => this.isRet(x),
+            complete: () => this.onComplete(),
+        }
+        
+    }
+    isRet(url: string) {
+        let propurl = new URL(url);
+        if (propurl.protocol = "vivokey") {
+            this.isretyet = true;
+            this.returl = url;
+        }
+    }
+    onComplete() {
+        if (this.isretyet && this.returl != null) {
+            let propurl = new URL(this.returl);
+            let code = propurl.searchParams.get("code");
+            super.submit();
+        }
+    }
     settings() {
         const factory = this.componentFactoryResolver.resolveComponentFactory(ModalComponent);
         const modal = this.environmentModal.createComponent(factory).instance;
@@ -55,4 +83,6 @@ export class LoginComponent extends BaseLoginComponent {
             modal.close();
         });
     }
+
+
 }
