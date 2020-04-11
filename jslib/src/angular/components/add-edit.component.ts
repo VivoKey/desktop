@@ -42,6 +42,7 @@ import { SecureNoteView } from '../../models/view/secureNoteView';
 import { Utils } from '../../misc/utils';
 
 export class AddEditComponent implements OnInit {
+    @Input() cloneMode: boolean = false;
     @Input() folderId: string = null;
     @Input() cipherId: string;
     @Input() type: CipherType;
@@ -49,6 +50,7 @@ export class AddEditComponent implements OnInit {
     @Input() organizationId: string = null;
     @Output() onSavedCipher = new EventEmitter<CipherView>();
     @Output() onDeletedCipher = new EventEmitter<CipherView>();
+    @Output() onRestoredCipher = new EventEmitter<CipherView>();
     @Output() onCancelled = new EventEmitter<CipherView>();
     @Output() onEditAttachments = new EventEmitter<CipherView>();
     @Output() onShareCipher = new EventEmitter<CipherView>();
@@ -62,6 +64,7 @@ export class AddEditComponent implements OnInit {
     title: string;
     formPromise: Promise<any>;
     deletePromise: Promise<any>;
+    restorePromise: Promise<any>;
     checkPasswordPromise: Promise<number>;
     showPassword: boolean = false;
     showCardCode: boolean = false;
@@ -160,7 +163,12 @@ export class AddEditComponent implements OnInit {
         this.editMode = this.cipherId != null;
         if (this.editMode) {
             this.editMode = true;
-            this.title = this.i18nService.t('editItem');
+            if (this.cloneMode) {
+                this.cloneMode = true;
+                this.title = this.i18nService.t('addItem');
+            } else {
+                this.title = this.i18nService.t('editItem');
+            }
         } else {
             this.title = this.i18nService.t('addItem');
         }
@@ -176,6 +184,11 @@ export class AddEditComponent implements OnInit {
             if (this.editMode) {
                 const cipher = await this.loadCipher();
                 this.cipher = await cipher.decrypt();
+
+                // Adjust Cipher Name if Cloning
+                if (this.cloneMode) {
+                    this.cipher.name += ' - ' + this.i18nService.t('clone');
+                }
             } else {
                 this.cipher = new CipherView();
                 this.cipher.organizationId = this.organizationId == null ? null : this.organizationId;
@@ -190,7 +203,7 @@ export class AddEditComponent implements OnInit {
             }
         }
 
-        if (this.cipher != null && (!this.editMode || addEditCipherInfo != null)) {
+        if (this.cipher != null && (!this.editMode || addEditCipherInfo != null || this.cloneMode)) {
             await this.organizationChanged();
             if (this.collectionIds != null && this.collectionIds.length > 0 && this.collections.length > 0) {
                 this.collections.forEach((c) => {
@@ -210,21 +223,31 @@ export class AddEditComponent implements OnInit {
     }
 
     async submit(): Promise<boolean> {
+        if (this.cipher.isDeleted) {
+            return this.restore();
+        }
+
         if (this.cipher.name == null || this.cipher.name === '') {
             this.platformUtilsService.showToast('error', this.i18nService.t('errorOccurred'),
                 this.i18nService.t('nameRequired'));
             return false;
         }
 
-        if (!this.editMode && this.cipher.type === CipherType.Login &&
+        if ((!this.editMode || this.cloneMode) && this.cipher.type === CipherType.Login &&
             this.cipher.login.uris != null && this.cipher.login.uris.length === 1 &&
             (this.cipher.login.uris[0].uri == null || this.cipher.login.uris[0].uri === '')) {
             this.cipher.login.uris = null;
         }
 
-        if (!this.editMode && this.cipher.organizationId != null) {
+        // Allows saving of selected collections during "Add" and "Clone" flows
+        if ((!this.editMode || this.cloneMode) && this.cipher.organizationId != null) {
             this.cipher.collectionIds = this.collections == null ? [] :
                 this.collections.filter((c) => (c as any).checked).map((c) => c.id);
+        }
+
+        // Clear current Cipher Id to trigger "Add" cipher flow
+        if (this.cloneMode) {
+            this.cipher.id = null;
         }
 
         const cipher = await this.encryptCipher();
@@ -232,11 +255,11 @@ export class AddEditComponent implements OnInit {
             this.formPromise = this.saveCipher(cipher);
             await this.formPromise;
             this.cipher.id = cipher.id;
-            this.platformUtilsService.eventTrack(this.editMode ? 'Edited Cipher' : 'Added Cipher');
+            this.platformUtilsService.eventTrack(this.editMode && !this.cloneMode ? 'Edited Cipher' : 'Added Cipher');
             this.platformUtilsService.showToast('success', null,
-                this.i18nService.t(this.editMode ? 'editedItem' : 'addedItem'));
+                this.i18nService.t(this.editMode && !this.cloneMode ? 'editedItem' : 'addedItem'));
             this.onSavedCipher.emit(this.cipher);
-            this.messagingService.send(this.editMode ? 'editedCipher' : 'addedCipher');
+            this.messagingService.send(this.editMode && !this.cloneMode ? 'editedCipher' : 'addedCipher');
             return true;
         } catch { }
 
@@ -314,10 +337,35 @@ export class AddEditComponent implements OnInit {
         try {
             this.deletePromise = this.deleteCipher();
             await this.deletePromise;
-            this.platformUtilsService.eventTrack('Deleted Cipher');
-            this.platformUtilsService.showToast('success', null, this.i18nService.t('deletedItem'));
+            this.platformUtilsService.eventTrack((this.cipher.isDeleted ? 'Permanently ' : '') + 'Deleted Cipher');
+            this.platformUtilsService.showToast('success', null,
+                this.i18nService.t(this.cipher.isDeleted ? 'permanentlyDeletedItem' : 'deletedItem'));
             this.onDeletedCipher.emit(this.cipher);
-            this.messagingService.send('deletedCipher');
+            this.messagingService.send(this.cipher.isDeleted ? 'permanentlyDeletedCipher' : 'deletedCipher');
+        } catch { }
+
+        return true;
+    }
+
+    async restore(): Promise<boolean> {
+        if (!this.cipher.isDeleted) {
+            return false;
+        }
+
+        const confirmed = await this.platformUtilsService.showDialog(
+            this.i18nService.t('restoreItemConfirmation'), this.i18nService.t('restoreItem'),
+            this.i18nService.t('yes'), this.i18nService.t('no'), 'warning');
+        if (!confirmed) {
+            return false;
+        }
+
+        try {
+            this.restorePromise = this.restoreCipher();
+            await this.restorePromise;
+            this.platformUtilsService.eventTrack('Restored Cipher');
+            this.platformUtilsService.showToast('success', null, this.i18nService.t('restoredItem'));
+            this.onRestoredCipher.emit(this.cipher);
+            this.messagingService.send('restoredCipher');
         } catch { }
 
         return true;
@@ -432,6 +480,11 @@ export class AddEditComponent implements OnInit {
     }
 
     protected deleteCipher() {
-        return this.cipherService.deleteWithServer(this.cipher.id);
+        return this.cipher.isDeleted ? this.cipherService.deleteWithServer(this.cipher.id)
+            : this.cipherService.softDeleteWithServer(this.cipher.id);
+    }
+
+    protected restoreCipher() {
+        return this.cipherService.restoreWithServer(this.cipher.id);
     }
 }

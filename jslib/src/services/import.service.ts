@@ -25,6 +25,7 @@ import { CipherView } from '../models/view/cipherView';
 
 import { AscendoCsvImporter } from '../importers/ascendoCsvImporter';
 import { AvastCsvImporter } from '../importers/avastCsvImporter';
+import { AvastJsonImporter } from '../importers/avastJsonImporter';
 import { AviraCsvImporter } from '../importers/aviraCsvImporter';
 import { BitwardenCsvImporter } from '../importers/bitwardenCsvImporter';
 import { BitwardenJsonImporter } from '../importers/bitwardenJsonImporter';
@@ -35,6 +36,7 @@ import { ChromeCsvImporter } from '../importers/chromeCsvImporter';
 import { ClipperzHtmlImporter } from '../importers/clipperzHtmlImporter';
 import { CodebookCsvImporter } from '../importers/codebookCsvImporter';
 import { DashlaneJsonImporter } from '../importers/dashlaneJsonImporter';
+import { EncryptrCsvImporter } from '../importers/encryptrCsvImporter';
 import { EnpassCsvImporter } from '../importers/enpassCsvImporter';
 import { EnpassJsonImporter } from '../importers/enpassJsonImporter';
 import { FirefoxCsvImporter } from '../importers/firefoxCsvImporter';
@@ -117,6 +119,7 @@ export class ImportService implements ImportServiceAbstraction {
         { id: 'passpackcsv', name: 'Passpack (csv)' },
         { id: 'passmanjson', name: 'Passman (json)' },
         { id: 'avastcsv', name: 'Avast Passwords (csv)' },
+        { id: 'avastjson', name: 'Avast Passwords (json)' },
         { id: 'fsecurefsk', name: 'F-Secure KEY (fsk)' },
         { id: 'kasperskytxt', name: 'Kaspersky Password Manager (txt)' },
         { id: 'remembearcsv', name: 'RememBear (csv)' },
@@ -127,6 +130,7 @@ export class ImportService implements ImportServiceAbstraction {
         { id: 'blackberrycsv', name: 'BlackBerry Password Keeper (csv)' },
         { id: 'buttercupcsv', name: 'Buttercup (csv)' },
         { id: 'codebookcsv', name: 'Codebook (csv)' },
+        { id: 'encryptrcsv', name: 'Encryptr (csv)' },
     ];
 
     constructor(private cipherService: CipherService, private folderService: FolderService,
@@ -251,6 +255,8 @@ export class ImportService implements ImportServiceAbstraction {
                 return new PassmanJsonImporter();
             case 'avastcsv':
                 return new AvastCsvImporter();
+            case 'avastjson':
+                return new AvastJsonImporter();
             case 'fsecurefsk':
                 return new FSecureFskImporter();
             case 'kasperskytxt':
@@ -271,6 +277,8 @@ export class ImportService implements ImportServiceAbstraction {
                 return new ButtercupCsvImporter();
             case 'codebookcsv':
                 return new CodebookCsvImporter();
+            case 'encryptrcsv':
+                return new EncryptrCsvImporter();
             default:
                 return null;
         }

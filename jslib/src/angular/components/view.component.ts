@@ -33,6 +33,8 @@ const BroadcasterSubscriptionId = 'ViewComponent';
 export class ViewComponent implements OnDestroy, OnInit {
     @Input() cipherId: string;
     @Output() onEditCipher = new EventEmitter<CipherView>();
+    @Output() onCloneCipher = new EventEmitter<CipherView>();
+    @Output() onRestoreCipher = new EventEmitter<CipherView>();
 
     cipher: CipherView;
     showPassword: boolean;
@@ -103,6 +105,17 @@ export class ViewComponent implements OnDestroy, OnInit {
 
     edit() {
         this.onEditCipher.emit(this.cipher);
+    }
+
+    clone() {
+        this.onCloneCipher.emit(this.cipher);
+    }
+
+    restore() {
+        if (!this.cipher.isDeleted) {
+            return;
+        }
+        this.onRestoreCipher.emit(this.cipher);
     }
 
     togglePassword() {
@@ -192,7 +205,7 @@ export class ViewComponent implements OnDestroy, OnInit {
         }
 
         a.downloading = true;
-        const response = await fetch(new Request(attachment.url, { cache: 'no-cache' }));
+        const response = await fetch(new Request(attachment.url, { cache: 'no-store' }));
         if (response.status !== 200) {
             this.platformUtilsService.showToast('error', null, this.i18nService.t('errorOccurred'));
             a.downloading = false;

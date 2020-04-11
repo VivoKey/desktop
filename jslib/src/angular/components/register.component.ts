@@ -11,7 +11,6 @@ import { PasswordGenerationService } from '../../abstractions/passwordGeneration
 import { PlatformUtilsService } from '../../abstractions/platformUtils.service';
 import { StateService } from '../../abstractions/state.service';
 
-
 import { KdfType } from '../../enums/kdfType';
 
 export class RegisterComponent {
@@ -63,8 +62,8 @@ export class RegisterComponent {
         }
     }
 
-    async supsubmit() {
-            if (this.email == null || this.email === '') {
+    async submit() {
+        if (this.email == null || this.email === '') {
             this.platformUtilsService.showToast('error', this.i18nService.t('errorOccurred'),
                 this.i18nService.t('emailRequired'));
             return;

@@ -1,8 +1,11 @@
+import { PolicyType } from '../enums/policyType';
+
 import { EnvironmentUrls } from '../models/domain/environmentUrls';
 
 import { BitPayInvoiceRequest } from '../models/request/bitPayInvoiceRequest';
 import { CipherBulkDeleteRequest } from '../models/request/cipherBulkDeleteRequest';
 import { CipherBulkMoveRequest } from '../models/request/cipherBulkMoveRequest';
+import { CipherBulkRestoreRequest } from '../models/request/cipherBulkRestoreRequest';
 import { CipherBulkShareRequest } from '../models/request/cipherBulkShareRequest';
 import { CipherCollectionsRequest } from '../models/request/cipherCollectionsRequest';
 import { CipherCreateRequest } from '../models/request/cipherCreateRequest';
@@ -33,6 +36,7 @@ import { PasswordHintRequest } from '../models/request/passwordHintRequest';
 import { PasswordRequest } from '../models/request/passwordRequest';
 import { PasswordVerificationRequest } from '../models/request/passwordVerificationRequest';
 import { PaymentRequest } from '../models/request/paymentRequest';
+import { PolicyRequest } from '../models/request/policyRequest';
 import { PreloginRequest } from '../models/request/preloginRequest';
 import { RegisterRequest } from '../models/request/registerRequest';
 import { SeatRequest } from '../models/request/seatRequest';
@@ -80,6 +84,7 @@ import {
     OrganizationUserUserDetailsResponse,
 } from '../models/response/organizationUserResponse';
 import { PaymentResponse } from '../models/response/paymentResponse';
+import { PolicyResponse } from '../models/response/policyResponse';
 import { PreloginResponse } from '../models/response/preloginResponse';
 import { ProfileResponse } from '../models/response/profileResponse';
 import { SelectionReadOnlyResponse } from '../models/response/selectionReadOnlyResponse';
@@ -159,6 +164,12 @@ export abstract class ApiService {
     postPurgeCiphers: (request: PasswordVerificationRequest, organizationId?: string) => Promise<any>;
     postImportCiphers: (request: ImportCiphersRequest) => Promise<any>;
     postImportOrganizationCiphers: (organizationId: string, request: ImportOrganizationCiphersRequest) => Promise<any>;
+    putDeleteCipher: (id: string) => Promise<any>;
+    putDeleteCipherAdmin: (id: string) => Promise<any>;
+    putDeleteManyCiphers: (request: CipherBulkDeleteRequest) => Promise<any>;
+    putRestoreCipher: (id: string) => Promise<any>;
+    putRestoreCipherAdmin: (id: string) => Promise<any>;
+    putRestoreManyCiphers: (request: CipherBulkRestoreRequest) => Promise<any>;
 
     postCipherAttachment: (id: string, data: FormData) => Promise<CipherResponse>;
     postCipherAttachmentAdmin: (id: string, data: FormData) => Promise<CipherResponse>;
@@ -185,6 +196,12 @@ export abstract class ApiService {
     putGroupUsers: (organizationId: string, id: string, request: string[]) => Promise<any>;
     deleteGroup: (organizationId: string, id: string) => Promise<any>;
     deleteGroupUser: (organizationId: string, id: string, organizationUserId: string) => Promise<any>;
+
+    getPolicy: (organizationId: string, type: PolicyType) => Promise<PolicyResponse>;
+    getPolicies: (organizationId: string) => Promise<ListResponse<PolicyResponse>>;
+    getPoliciesByToken: (organizationId: string, token: string, email: string, organizationUserId: string) =>
+        Promise<ListResponse<PolicyResponse>>;
+    putPolicy: (organizationId: string, type: PolicyType, request: PolicyRequest) => Promise<PolicyResponse>;
 
     getOrganizationUser: (organizationId: string, id: string) => Promise<OrganizationUserDetailsResponse>;
     getOrganizationUserGroups: (organizationId: string, id: string) => Promise<string[]>;

@@ -2,14 +2,19 @@ import * as zxcvbn from 'zxcvbn';
 
 import { CipherString } from '../models/domain/cipherString';
 import { GeneratedPasswordHistory } from '../models/domain/generatedPasswordHistory';
+import { PasswordGeneratorPolicyOptions } from '../models/domain/passwordGeneratorPolicyOptions';
+import { Policy } from '../models/domain/policy';
 
 import { CryptoService } from '../abstractions/crypto.service';
 import {
     PasswordGenerationService as PasswordGenerationServiceAbstraction,
 } from '../abstractions/passwordGeneration.service';
+import { PolicyService } from '../abstractions/policy.service';
 import { StorageService } from '../abstractions/storage.service';
 
 import { EEFLongWordList } from '../misc/wordlist';
+
+import { PolicyType } from '../enums/policyType';
 
 const DefaultOptions = {
     length: 14,
@@ -40,7 +45,8 @@ export class PasswordGenerationService implements PasswordGenerationServiceAbstr
     private optionsCache: any;
     private history: GeneratedPasswordHistory[];
 
-    constructor(private cryptoService: CryptoService, private storageService: StorageService) { }
+    constructor(private cryptoService: CryptoService, private storageService: StorageService,
+        private policyService: PolicyService) { }
 
     async generatePassword(options: any): Promise<string> {
         // overload defaults with given options
@@ -51,33 +57,7 @@ export class PasswordGenerationService implements PasswordGenerationServiceAbstr
         }
 
         // sanitize
-        if (o.uppercase && o.minUppercase <= 0) {
-            o.minUppercase = 1;
-        } else if (!o.uppercase) {
-            o.minUppercase = 0;
-        }
-
-        if (o.lowercase && o.minLowercase <= 0) {
-            o.minLowercase = 1;
-        } else if (!o.lowercase) {
-            o.minLowercase = 0;
-        }
-
-        if (o.number && o.minNumber <= 0) {
-            o.minNumber = 1;
-        } else if (!o.number) {
-            o.minNumber = 0;
-        }
-
-        if (o.special && o.minSpecial <= 0) {
-            o.minSpecial = 1;
-        } else if (!o.special) {
-            o.minSpecial = 0;
-        }
-
-        if (!o.length || o.length < 1) {
-            o.length = 10;
-        }
+        this.sanitizePasswordLength(o, true);
 
         const minLength: number = o.minUppercase + o.minLowercase + o.minNumber + o.minSpecial;
         if (o.length < minLength) {
@@ -207,7 +187,7 @@ export class PasswordGenerationService implements PasswordGenerationServiceAbstr
         return wordList.join(o.wordSeparator);
     }
 
-    async getOptions() {
+    async getOptions(): Promise<[any, PasswordGeneratorPolicyOptions]> {
         if (this.optionsCache == null) {
             const options = await this.storageService.get(Keys.options);
             if (options == null) {
@@ -216,8 +196,138 @@ export class PasswordGenerationService implements PasswordGenerationServiceAbstr
                 this.optionsCache = Object.assign({}, DefaultOptions, options);
             }
         }
+        const enforcedOptions = await this.enforcePasswordGeneratorPoliciesOnOptions(this.optionsCache);
+        this.optionsCache = enforcedOptions[0];
+        return [this.optionsCache, enforcedOptions[1]];
+    }
 
-        return this.optionsCache;
+    async enforcePasswordGeneratorPoliciesOnOptions(options: any): Promise<[any, PasswordGeneratorPolicyOptions]> {
+        let enforcedPolicyOptions = await this.getPasswordGeneratorPolicyOptions();
+        if (enforcedPolicyOptions != null) {
+            if (options.length < enforcedPolicyOptions.minLength) {
+                options.length = enforcedPolicyOptions.minLength;
+            }
+
+            if (enforcedPolicyOptions.useUppercase) {
+                options.uppercase = true;
+            }
+
+            if (enforcedPolicyOptions.useLowercase) {
+                options.lowercase = true;
+            }
+
+            if (enforcedPolicyOptions.useNumbers) {
+                options.number = true;
+            }
+
+            if (options.minNumber < enforcedPolicyOptions.numberCount) {
+                options.minNumber = enforcedPolicyOptions.numberCount;
+            }
+
+            if (enforcedPolicyOptions.useSpecial) {
+                options.special = true;
+            }
+
+            if (options.minSpecial < enforcedPolicyOptions.specialCount) {
+                options.minSpecial = enforcedPolicyOptions.specialCount;
+            }
+
+            // Must normalize these fields because the receiving call expects all options to pass the current rules
+            if (options.minSpecial + options.minNumber > options.length) {
+                options.minSpecial = options.length - options.minNumber;
+            }
+
+            if (options.numWords < enforcedPolicyOptions.minNumberWords) {
+                options.numWords = enforcedPolicyOptions.minNumberWords;
+            }
+
+            if (enforcedPolicyOptions.capitalize) {
+                options.capitalize = true;
+            }
+
+            if (enforcedPolicyOptions.includeNumber) {
+                options.includeNumber = true;
+            }
+
+            // Force default type if password/passphrase selected via policy
+            if (enforcedPolicyOptions.defaultType === 'password' ||
+                enforcedPolicyOptions.defaultType === 'passphrase') {
+                options.type = enforcedPolicyOptions.defaultType;
+            }
+        } else { // UI layer expects an instantiated object to prevent more explicit null checks
+            enforcedPolicyOptions = new PasswordGeneratorPolicyOptions();
+        }
+        return [options, enforcedPolicyOptions];
+    }
+
+    async getPasswordGeneratorPolicyOptions(): Promise<PasswordGeneratorPolicyOptions> {
+        const policies: Policy[] = await this.policyService.getAll(PolicyType.PasswordGenerator);
+        let enforcedOptions: PasswordGeneratorPolicyOptions = null;
+
+        if (policies == null || policies.length === 0) {
+            return enforcedOptions;
+        }
+
+        policies.forEach((currentPolicy) => {
+            if (!currentPolicy.enabled || currentPolicy.data == null) {
+                return;
+            }
+
+            if (enforcedOptions == null) {
+                enforcedOptions = new PasswordGeneratorPolicyOptions();
+            }
+
+            // Password wins in multi-org collisions
+            if (currentPolicy.data.defaultType != null && enforcedOptions.defaultType !== 'password') {
+                enforcedOptions.defaultType = currentPolicy.data.defaultType;
+            }
+
+            if (currentPolicy.data.minLength != null
+                && currentPolicy.data.minLength > enforcedOptions.minLength) {
+                enforcedOptions.minLength = currentPolicy.data.minLength;
+            }
+
+            if (currentPolicy.data.useUpper) {
+                enforcedOptions.useUppercase = true;
+            }
+
+            if (currentPolicy.data.useLower) {
+                enforcedOptions.useLowercase = true;
+            }
+
+            if (currentPolicy.data.useNumbers) {
+                enforcedOptions.useNumbers = true;
+            }
+
+            if (currentPolicy.data.minNumbers != null
+                && currentPolicy.data.minNumbers > enforcedOptions.numberCount) {
+                enforcedOptions.numberCount = currentPolicy.data.minNumbers;
+            }
+
+            if (currentPolicy.data.useSpecial) {
+                enforcedOptions.useSpecial = true;
+            }
+
+            if (currentPolicy.data.minSpecial != null
+                && currentPolicy.data.minSpecial > enforcedOptions.specialCount) {
+                enforcedOptions.specialCount = currentPolicy.data.minSpecial;
+            }
+
+            if (currentPolicy.data.minNumberWords != null
+                && currentPolicy.data.minNumberWords > enforcedOptions.minNumberWords) {
+                enforcedOptions.minNumberWords = currentPolicy.data.minNumberWords;
+            }
+
+            if (currentPolicy.data.capitalize) {
+                enforcedOptions.capitalize = true;
+            }
+
+            if (currentPolicy.data.includeNumber) {
+                enforcedOptions.includeNumber = true;
+            }
+        });
+
+        return enforcedOptions;
     }
 
     async saveOptions(options: any) {
@@ -283,6 +393,65 @@ export class PasswordGenerationService implements PasswordGenerationServiceAbstr
         return result;
     }
 
+    normalizeOptions(options: any, enforcedPolicyOptions: PasswordGeneratorPolicyOptions) {
+        options.minLowercase = 0;
+        options.minUppercase = 0;
+
+        if (!options.length || options.length < 5) {
+            options.length = 5;
+        } else if (options.length > 128) {
+            options.length = 128;
+        }
+
+        if (options.length < enforcedPolicyOptions.minLength) {
+            options.length = enforcedPolicyOptions.minLength;
+        }
+
+        if (!options.minNumber) {
+            options.minNumber = 0;
+        } else if (options.minNumber > options.length) {
+            options.minNumber = options.length;
+        } else if (options.minNumber > 9) {
+            options.minNumber = 9;
+        }
+
+        if (options.minNumber < enforcedPolicyOptions.numberCount) {
+            options.minNumber = enforcedPolicyOptions.numberCount;
+        }
+
+        if (!options.minSpecial) {
+            options.minSpecial = 0;
+        } else if (options.minSpecial > options.length) {
+            options.minSpecial = options.length;
+        } else if (options.minSpecial > 9) {
+            options.minSpecial = 9;
+        }
+
+        if (options.minSpecial < enforcedPolicyOptions.specialCount) {
+            options.minSpecial = enforcedPolicyOptions.specialCount;
+        }
+
+        if (options.minSpecial + options.minNumber > options.length) {
+            options.minSpecial = options.length - options.minNumber;
+        }
+
+        if (options.numWords == null || options.length < 3) {
+            options.numWords = 3;
+        } else if (options.numWords > 20) {
+            options.numWords = 20;
+        }
+
+        if (options.numWords < enforcedPolicyOptions.minNumberWords) {
+            options.numWords = enforcedPolicyOptions.minNumberWords;
+        }
+
+        if (options.wordSeparator != null && options.wordSeparator.length > 1) {
+            options.wordSeparator = options.wordSeparator[0];
+        }
+
+        this.sanitizePasswordLength(options, false);
+    }
+
     private capitalize(str: string) {
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
@@ -335,6 +504,56 @@ export class PasswordGenerationService implements PasswordGenerationServiceAbstr
         for (let i = array.length - 1; i > 0; i--) {
             const j = await this.cryptoService.randomNumber(0, i);
             [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    private sanitizePasswordLength(options: any, forGeneration: boolean) {
+        let minUppercaseCalc = 0;
+        let minLowercaseCalc = 0;
+        let minNumberCalc: number = options.minNumber;
+        let minSpecialCalc: number = options.minSpecial;
+
+        if (options.uppercase && options.minUppercase <= 0) {
+            minUppercaseCalc = 1;
+        } else if (!options.uppercase) {
+            minUppercaseCalc = 0;
+        }
+
+        if (options.lowercase && options.minLowercase <= 0) {
+            minLowercaseCalc = 1;
+        } else if (!options.lowercase) {
+            minLowercaseCalc = 0;
+        }
+
+        if (options.number && options.minNumber <= 0) {
+            minNumberCalc = 1;
+        } else if (!options.number) {
+            minNumberCalc = 0;
+        }
+
+        if (options.special && options.minSpecial <= 0) {
+            minSpecialCalc = 1;
+        } else if (!options.special) {
+            minSpecialCalc = 0;
+        }
+
+        // This should never happen but is a final safety net
+        if (!options.length || options.length < 1) {
+            options.length = 10;
+        }
+
+        const minLength: number = minUppercaseCalc + minLowercaseCalc + minNumberCalc + minSpecialCalc;
+        // Normalize and Generation both require this modification
+        if (options.length < minLength) {
+            options.length = minLength;
+        }
+
+        // Apply other changes if the options object passed in is for generation
+        if (forGeneration) {
+            options.minUppercase = minUppercaseCalc;
+            options.minLowercase = minLowercaseCalc;
+            options.minNumber = minNumberCalc;
+            options.minSpecial = minSpecialCalc;
         }
     }
 }
