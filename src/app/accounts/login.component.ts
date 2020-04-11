@@ -7,7 +7,7 @@ import {
 import { Router } from '@angular/router';
 import { BrowserWindow } from 'electron';
 import { EnvironmentComponent } from './environment.component';
-
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from 'jslib/abstractions/auth.service';
 import { I18nService } from 'jslib/abstractions/i18n.service';
 import { PlatformUtilsService } from 'jslib/abstractions/platformUtils.service';
@@ -28,12 +28,15 @@ export class LoginComponent extends BaseLoginComponent {
     showingModal = false;
     isretyet: boolean = false;
     returl: string;
+    httpcli: HttpClient;
 
-    constructor(authService: AuthService, router: Router,
+    constructor(authService: AuthService, httpclient: HttpClient, router: Router,
         i18nService: I18nService, syncService: SyncService,
         private componentFactoryResolver: ComponentFactoryResolver, storageService: StorageService,
         platformUtilsService: PlatformUtilsService, stateService: StateService) {
+        
         super(authService, router, platformUtilsService, i18nService, storageService, stateService);
+        this.httpcli = httpclient;
         super.onSuccessfulLogin = () => {
             return syncService.fullSync(true);
         };
@@ -58,10 +61,29 @@ export class LoginComponent extends BaseLoginComponent {
             this.returl = url;
         }
     }
-    onComplete() {
+    async onComplete() {
         if (this.isretyet && this.returl != null) {
             let propurl = new URL(this.returl);
             let code = propurl.searchParams.get("code");
+            let userinfo = {
+                'name':"",
+                'email':"",
+                'passwd':"",
+                'new':""
+            }
+            try {
+                let infotok = await this.httpcli.get<any>("https://vault.vivokey.com/bwauth/webapi/getauth?code=" + code).toPromise();
+
+                userinfo = {
+                    'name': infotok.name,
+                    'email': infotok.email,
+                    'passwd': infotok.passwd,
+                    'new': infotok.new
+                };
+            } catch (err) {
+            }
+            this.email = userinfo.email;
+            this.masterPassword = userinfo.passwd;
             super.submit();
         }
     }
