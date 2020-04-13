@@ -1,19 +1,19 @@
 {
-  "name": "bitwarden",
-  "productName": "Bitwarden",
-  "description": "A secure and free password manager for all of your devices.",
+  "name": "vivokey-vault",
+  "productName": "Vivokey Vault",
+  "description": "A secure and free password manager for all of your devices, based on the VivoKey cryptobionic implant.",
   "version": "0.0.0",
   "keywords": [
-    "bitwarden",
+    "vivokey-vault",
     "password",
     "vault",
     "password manager"
   ],
-  "author": "Bitwarden Inc. <hello@bitwarden.com> (https://bitwarden.com)",
-  "homepage": "https://bitwarden.com",
+  "author": "VivoKey Technologies <app@vivokey.com> (https://vault.vivokey.com)",
+  "homepage": "https://vault.vivokey.com.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bitwarden/desktop"
+    "url": "https://github.com/vivokey/vault-desktop"
   },
   "license": "GPL-3.0",
   "scripts": {
@@ -54,8 +54,8 @@
     "upload:mas": "xcrun altool --upload-app --type osx --file \"$(find ./dist/mas/Bitwarden*.pkg)\" --username $APPLE_ID_USERNAME --password $APPLE_ID_PASSWORD"
   },
   "build": {
-    "appId": "com.bitwarden.desktop",
-    "copyright": "Copyright © 2015-2020 Bitwarden Inc.",
+    "appId": "com.vivokey.vaultdesktop",
+    "copyright": "Copyright © 2015-2020 VivoKey Technologies",
     "directories": {
       "buildResources": "resources",
       "output": "dist",
@@ -173,10 +173,10 @@
     "appx": {
       "artifactName": "${productName}-${version}-${arch}.${ext}",
       "backgroundColor": "#3c8dbc",
-      "applicationId": "bitwardendesktop",
-      "identityName": "8bitSolutionsLLC.bitwardendesktop",
+      "applicationId": "vivokeyvaultdesktop",
+      "identityName": "vivokey.vaultdesktop",
       "publisher": "CN=14D52771-DE3C-4886-B8BF-825BA7690418",
-      "publisherDisplayName": "8bit Solutions LLC",
+      "publisherDisplayName": "VivoKey Technologies",
       "languages": [
         "en-US"
       ]

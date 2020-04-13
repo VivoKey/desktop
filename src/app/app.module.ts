@@ -14,7 +14,7 @@ import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-
+import { HttpClientModule } from '@angular/common/http';
 import { AppComponent } from './app.component';
 
 import { EnvironmentComponent } from './accounts/environment.component';
@@ -133,6 +133,7 @@ registerLocaleData(localeZhTw, 'zh-TW');
         BrowserAnimationsModule,
         FormsModule,
         AppRoutingModule,
+        HttpClientModule,
         ServicesModule,
         Angulartics2Module.forRoot([Angulartics2GoogleAnalytics], {
             pageTracking: {

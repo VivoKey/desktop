@@ -3,11 +3,12 @@ import {
     ComponentFactoryResolver,
     ViewChild,
     ViewContainerRef,
+    Injectable
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { BrowserWindow } from 'electron';
 import { EnvironmentComponent } from './environment.component';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient} from '@angular/common/http';
 import { AuthService } from 'jslib/abstractions/auth.service';
 import { I18nService } from 'jslib/abstractions/i18n.service';
 import { PlatformUtilsService } from 'jslib/abstractions/platformUtils.service';
@@ -22,6 +23,9 @@ import { ModalComponent } from 'jslib/angular/components/modal.component';
     selector: 'app-login',
     templateUrl: 'login.component.html',
 })
+@Injectable({
+    providedIn: 'root',
+})
 export class LoginComponent extends BaseLoginComponent {
     @ViewChild('environment', { read: ViewContainerRef }) environmentModal: ViewContainerRef;
 
@@ -29,39 +33,52 @@ export class LoginComponent extends BaseLoginComponent {
     isretyet: boolean = false;
     returl: string;
     httpcli: HttpClient;
+    electron = require('electron');
+    BrowserWindow = this.electron.remote.BrowserWindow;
+    win: BrowserWindow;
 
-    constructor(authService: AuthService, httpclient: HttpClient, router: Router,
-        i18nService: I18nService, syncService: SyncService,
+    constructor(authService: AuthService, router: Router,
+        i18nService: I18nService, syncService: SyncService, httpclient: HttpClient,
         private componentFactoryResolver: ComponentFactoryResolver, storageService: StorageService,
         platformUtilsService: PlatformUtilsService, stateService: StateService) {
         
         super(authService, router, platformUtilsService, i18nService, storageService, stateService);
         this.httpcli = httpclient;
+
         super.onSuccessfulLogin = () => {
             return syncService.fullSync(true);
         };
     }
     async submit() {
-        let win = new BrowserWindow({ width: 800, height: 600, frame: false })
-        win.loadURL("https://vault.vivokey.com/bwauth/webapi/redirectin?state=login&app_type=mobile");
-        win.once('ready-to-show', () => {
-            win.show()
+        this.win = new this.BrowserWindow({ width: 800, height: 600 });
+        this.win.loadURL("https://vault.vivokey.com/bwauth/webapi/redirectin?state=login&app_type=mobile");
+        this.win.once('ready-to-show', () => {
+            this.win.show()
         })
-        let con = win.webContents;
-        let observ = {
-            next: (x: string) => this.isRet(x),
-            complete: () => this.onComplete(),
-        }
+        let con = this.win.webContents;
+        con.on("will-redirect", (event, url) => {
+            this.isRet(url);
+            if (this.isretyet) {
+                this.onComplete();
+            }
+        });
+
         
     }
     isRet(url: string) {
         let propurl = new URL(url);
-        if (propurl.protocol = "vivokey") {
+        console.log("URL Captured: " + url);
+        if (propurl.searchParams.has("code") && propurl.searchParams.has("state")) {
+            this.isretyet = true;
+            this.returl = url;
+        }
+        if (propurl.protocol == "vivokey") {
             this.isretyet = true;
             this.returl = url;
         }
     }
     async onComplete() {
+        this.win.destroy();
         if (this.isretyet && this.returl != null) {
             let propurl = new URL(this.returl);
             let code = propurl.searchParams.get("code");
