@@ -50,6 +50,7 @@ export class LoginComponent extends BaseLoginComponent {
         };
     }
     async submit() {
+        this.isretyet = false;
         this.win = new this.BrowserWindow({ width: 800, height: 600 });
         this.win.loadURL("https://vault.vivokey.com/bwauth/webapi/redirectin?state=login&app_type=mobile");
         this.win.once('ready-to-show', () => {

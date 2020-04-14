@@ -195,7 +195,7 @@
                 {{'notes' | i18n}}
             </div>
             <div class="box-content">
-                <div class="box-content-row pre-wrap">{{cipher.notes}}</div>
+                <div Markdown ngPreserveWhitespaces class="box-content-row pre-wrap">{{cipher.notes}}</div>
             </div>
         </div>
         <div class="box" *ngIf="cipher.hasFields">

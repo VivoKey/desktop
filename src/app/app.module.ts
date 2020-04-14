@@ -26,6 +26,7 @@ import { RegisterComponent } from './accounts/register.component';
 import { SettingsComponent } from './accounts/settings.component';
 import { TwoFactorOptionsComponent } from './accounts/two-factor-options.component';
 import { TwoFactorComponent } from './accounts/two-factor.component';
+import { NgxMdModule } from 'ngx-md';
 
 import { CalloutComponent } from 'jslib/angular/components/callout.component';
 import { IconComponent } from 'jslib/angular/components/icon.component';
@@ -134,6 +135,7 @@ registerLocaleData(localeZhTw, 'zh-TW');
         FormsModule,
         AppRoutingModule,
         HttpClientModule,
+        NgxMdModule.forRoot(),
         ServicesModule,
         Angulartics2Module.forRoot([Angulartics2GoogleAnalytics], {
             pageTracking: {
