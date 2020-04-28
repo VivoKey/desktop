@@ -1,6 +1,6 @@
 {
   "bitwarden": {
-    "message": "Bitwarden"
+    "message": "VivoKey Vault"
   },
   "filters": {
     "message": "Filters"
@@ -611,7 +611,7 @@
     "message": "Self-hosted environment"
   },
   "selfHostedEnvironmentFooter": {
-    "message": "Specify the base URL of your on-premise hosted Bitwarden installation."
+    "message": "Specify the base URL of your on-premise hosted VivoKey Vault installation."
   },
   "customEnvironment": {
     "message": "Custom environment"
@@ -716,7 +716,7 @@
     "message": "Change master password"
   },
   "changeMasterPasswordConfirmation": {
-    "message": "You can change your master password on the bitwarden.com web vault. Do you want to visit the website now?"
+    "message": "You can change your master password on the vault.vivokey.com web vault. Do you want to visit the website now?"
   },
   "fingerprintPhrase": {
     "message": "Fingerprint phrase",
@@ -756,7 +756,7 @@
       },
       "hostname": {
         "content": "$2",
-        "example": "bitwarden.com"
+        "example": "vault.vivokey.com"
       }
     }
   },
@@ -764,7 +764,7 @@
     "message": "Invalid master password"
   },
   "twoStepLoginConfirmation": {
-    "message": "Two-step login makes your account more secure by requiring you to verify your login with another device such as a security key, authenticator app, SMS, phone call, or email. Two-step login can be enabled on the bitwarden.com web vault. Do you want to visit the website now?"
+    "message": "Two-step login makes your account more secure by requiring you to verify your login with another device such as a security key, authenticator app, SMS, phone call, or email. Two-step login can be enabled on the vault.vivokey.com web vault. Do you want to visit the website now?"
   },
   "twoStepLogin": {
     "message": "Two-step login"
@@ -951,7 +951,7 @@
     "message": "Manage membership"
   },
   "premiumManageAlert": {
-    "message": "You can manage your membership on the bitwarden.com web vault. Do you want to visit the website now?"
+    "message": "You can manage your membership on the vault.vivokey.com web vault. Do you want to visit the website now?"
   },
   "premiumRefresh": {
     "message": "Refresh membership"
@@ -984,13 +984,13 @@
     "message": "Purchase Premium"
   },
   "premiumPurchaseAlert": {
-    "message": "You can purchase premium membership on the bitwarden.com web vault. Do you want to visit the website now?"
+    "message": "You can purchase premium membership on the vault.vivokey.com web vault. Do you want to visit the website now?"
   },
   "premiumCurrentMember": {
     "message": "You are a premium member!"
   },
   "premiumCurrentMemberThanks": {
-    "message": "Thank you for supporting Bitwarden."
+    "message": "Thank you for supporting VivoKey Vault."
   },
   "premiumPrice": {
     "message": "All for just $PRICE$ /year!",
@@ -1061,13 +1061,13 @@
     "description": "Bring all windows to front (foreground)"
   },
   "aboutBitwarden": {
-    "message": "About Bitwarden"
+    "message": "About VivoKey Vault"
   },
   "services": {
     "message": "Services"
   },
   "hideBitwarden": {
-    "message": "Hide Bitwarden"
+    "message": "Hide VivoKey Vault"
   },
   "hideOthers": {
     "message": "Hide others"
@@ -1076,7 +1076,7 @@
     "message": "Show all"
   },
   "quitBitwarden": {
-    "message": "Quit Bitwarden"
+    "message": "Quit VivoKey Vault"
   },
   "valueCopied": {
     "message": "$VALUE$ copied",
@@ -1210,7 +1210,7 @@
     "message": "Weak master password"
   },
   "weakMasterPasswordDesc": {
-    "message": "The master password you have chosen is weak. You should use a strong master password (or a passphrase) to properly protect your Bitwarden account. Are you sure you want to use this master password?"
+    "message": "The master password you have chosen is weak. You should use a strong master password (or a passphrase) to properly protect your VivoKey Vault account. Are you sure you want to use this master password?"
   },
   "pin": {
     "message": "PIN",
@@ -1220,7 +1220,7 @@
     "message": "Unlock with PIN"
   },
   "setYourPinCode": {
-    "message": "Set your PIN code for unlocking Bitwarden. Your PIN settings will be reset if you ever fully log out of the application."
+    "message": "Set your PIN code for unlocking VivoKey Vault. Your PIN settings will be reset if you ever fully log out of the application."
   },
   "pinRequired": {
     "message": "PIN code is required."
