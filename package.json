@@ -10,7 +10,7 @@
     "password manager"
   ],
   "author": "VivoKey Technologies <app@vivokey.com> (https://vault.vivokey.com)",
-  "homepage": "https://vault.vivokey.com.com",
+  "homepage": "https://vault.vivokey.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/vivokey/vault-desktop"
